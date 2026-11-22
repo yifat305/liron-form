@@ -131,23 +131,15 @@ input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(19,1
   <div class="sigbox"><canvas id="sig2"></canvas></div>
   <div class="sigbar"><span>לא חובה</span><button type="button" class="linkbtn" data-clear="sig2">ניקוי</button></div>
 
-  <button class="btn primary" type="submit">אישור וחתימה</button>
+  <button class="btn primary" type="submit" id="submitBtn">אישור, חתימה ושליחה</button>
   <div id="errSummary"></div>
 </div>
 </form>
 </div>
 
 <div id="done" class="card">
-  <h2>תודה, הטופס נחתם</h2>
-  <p class="note">כדי שההתחייבות תגיע ללירון, יש לשמור את הטופס החתום ולשלוח אותו:</p>
-  <img id="preview" alt="הטופס החתום">
-  <button class="btn primary" id="dl" type="button" style="display:none">שמירת הטופס החתום כתמונה</button>
-  <div class="toast" id="dlMsg"></div>
-  <a class="btn wa" id="wa" href="#" target="_blank" rel="noopener">שליחת אישור בוואטסאפ</a>
-  <button class="btn ghost" id="copy" type="button">העתקת פרטי האישור</button>
-  <div class="toast" id="copyMsg"></div>
-  <p class="note">אם השמירה לא נפתחה, אפשר לצלם מסך של הטופס החתום ולשלוח אותו בוואטסאפ.</p>
-  <button class="btn ghost" id="back" type="button">חזרה לעריכה</button>
+  <h2>תודה, הטופס נחתם ונשלח</h2>
+  <p class="note">כתב ההתחייבות החתום התקבל אצל לירון בן ישי. נחזור אליך בהקדם.</p>
 </div>
 
 </div>
@@ -281,32 +273,43 @@ function summaryText(){
   ].filter(Boolean).join('\n');
 }
 
-let lastBlob=null, downloads=null;
-(async()=>{ try{ if(window.claude&&claude.use){ downloads=await claude.use('downloads'); if(downloads) $('dl').style.display=''; } }catch(e){} })();
+const SEND_TO = 'office.liron2026@gmail.com';
+if(location.hash==='#sent'){ $('formView').style.display='none'; $('done').style.display='block'; }
 
 $('f').addEventListener('submit', async e=>{
   e.preventDefault();
   if(!validate()){ const first=document.querySelector('.invalid, .err:not(:empty)'); if(first) first.scrollIntoView({behavior:'smooth',block:'center'}); return; }
-  const img=await renderImage();
-  $('preview').src=img.toDataURL('image/png');
-  lastBlob=await new Promise(r=>img.toBlob(r,'image/png'));
-  $('wa').href='https://wa.me/?text='+encodeURIComponent(summaryText());
-  $('formView').style.display='none'; $('done').style.display='block'; window.scrollTo(0,0);
-});
-
-$('dl').addEventListener('click', async()=>{
-  $('dlMsg').textContent='';
+  const btn=$('submitBtn'); btn.disabled=true; btn.textContent='שולח...';
   try{
-    const nm=($('name').value.trim()||'לקוח').replace(/\s+/g,'_');
-    await downloads.save({filename:'התחייבות_'+nm+'.png', data:lastBlob});
-    $('dlMsg').textContent='הטופס נשמר.';
-  }catch(err){ $('dlMsg').textContent='השמירה לא בוצעה. אפשר לצלם מסך של הטופס.'; }
+    const img=await renderImage();
+    const blob=await new Promise(r=>img.toBlob(r,'image/jpeg',0.85));
+    const nm=$('name').value.trim();
+    const form=document.createElement('form');
+    form.method='POST'; form.enctype='multipart/form-data';
+    form.action='https://formsubmit.co/'+SEND_TO; form.style.display='none';
+    const add=(k,v)=>{const i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;form.appendChild(i);};
+    add('_subject','כתב התחייבות חתום: '+nm);
+    add('_captcha','false');
+    add('_template','table');
+    add('_next',location.href.split('#')[0]+'#sent');
+    add('שם מלא',nm);
+    add('תעודת זהות',$('tz').value.trim());
+    add('תאריך לידה',fmtDate($('dob').value));
+    add('כתובת',$('addr').value.trim());
+    add('טלפון',$('phone').value.trim());
+    add('דואל',$('email').value.trim()||'-');
+    add('בן או בת הזוג',$('spouse').value.trim()||'-');
+    add('אישור סעיפים','הלקוח אישר את כל 5 הסעיפים');
+    add('תאריך חתימה',today());
+    const fi=document.createElement('input'); fi.type='file'; fi.name='attachment';
+    const dt=new DataTransfer(); dt.items.add(new File([blob],'signed-'+$('tz').value.trim()+'.jpg',{type:'image/jpeg'}));
+    fi.files=dt.files; form.appendChild(fi);
+    document.body.appendChild(form); form.submit();
+  }catch(err){
+    btn.disabled=false; btn.textContent='אישור, חתימה ושליחה';
+    $('errSummary').textContent='השליחה לא הצליחה, נסו שוב.';
+  }
 });
-$('copy').addEventListener('click', async()=>{
-  try{ await navigator.clipboard.writeText(summaryText()); $('copyMsg').textContent='הפרטים הועתקו.'; }
-  catch(e){ $('copyMsg').textContent='ההעתקה לא הצליחה.'; }
-});
-$('back').addEventListener('click',()=>{ $('done').style.display='none'; $('formView').style.display='block'; });
 </script>
 </body>
 </html>
