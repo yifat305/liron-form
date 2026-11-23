@@ -41,6 +41,16 @@ input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(19,1
 #done{display:none}
 #done img{width:100%;border:1px solid var(--line);border-radius:10px;margin:10px 0}
 .note{font-size:14px;color:#55607a}
+.bank{background:#f5f6f8;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.bank div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #e1e5ea}
+.bank div:last-child{border-bottom:none}
+.upload{display:block;border:2px dashed #9aa4b8;border-radius:12px;padding:22px 16px;text-align:center;cursor:pointer;background:#fbfcfd;color:#55607a;font-weight:400}
+.upload.has{border-color:var(--teal);background:#eef7f9;color:var(--navy)}
+.upload input{display:none}
+.upload b{display:block;color:var(--navy);font-size:16px;margin-bottom:4px}
+#receiptPrev{max-width:180px;max-height:180px;border-radius:8px;margin:10px auto 0;display:none}
+.success{text-align:center;margin-bottom:10px}
+.check{width:64px;height:64px;border-radius:50%;background:#1fa855;color:#fff;font-size:36px;line-height:64px;margin:0 auto 10px}
 .toast{font-size:14px;color:var(--teal);margin-top:6px;min-height:20px}
 </style>
 </head>
@@ -90,7 +100,7 @@ input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(19,1
   <input id="phone" type="tel" placeholder="מילוי: מספר נייד" autocomplete="tel">
   <div class="err" data-for="phone"></div>
 
-  <label for="email">דוא"ל <span class="hint">(לא חובה)</span></label>
+  <label for="email">דוא"ל <span class="hint">(לא חובה, יישלח אלייך העתק של הטופס החתום)</span></label>
   <input id="email" type="email" placeholder="מילוי: כתובת מייל" autocomplete="email">
 
   <label for="spouse">שם בן הזוג <span class="hint">(אם משתתף בפגישה)</span></label>
@@ -135,6 +145,24 @@ input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(19,1
 </div>
 
 <div class="card">
+  <h2>תשלום עבור הזום</h2>
+  <p>יש להעביר 500 ₪ (כולל מע"מ) לפני הזום, לחשבון הבא:</p>
+  <div class="bank">
+    <div><span>בנק</span><b>בנק לאומי</b></div>
+    <div><span>סניף</span><b>933</b></div>
+    <div><span>מספר חשבון</span><b>13830248</b></div>
+    <div><span>סכום</span><b>500 ₪</b></div>
+  </div>
+  <label class="upload" id="uploadBox">
+    <input type="file" id="receipt" accept="image/*,application/pdf">
+    <b>העלאת צילום של ההעברה</b>
+    <span id="receiptName">לחצי כאן כדי לבחור צילום מסך או קובץ של אישור ההעברה</span>
+    <img id="receiptPrev" alt="">
+  </label>
+  <div class="err" data-for="receipt"></div>
+</div>
+
+<div class="card">
   <h2>הצהרה וחתימה</h2>
   <p>קראתי את כל הסעיפים שלמעלה, הבנתי אותם ואני מסכימה להם.</p>
 
@@ -150,8 +178,15 @@ input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(19,1
 </div>
 
 <div id="done" class="card">
-  <h2>תודה, הטופס נחתם ונשלח</h2>
+  <div class="success">
+    <div class="check">✓</div>
+    <h2 style="border:none;display:block;text-align:center;margin:0">המסמך נחתם ונשלח בהצלחה</h2>
+  </div>
   <p class="note">כתב ההתחייבות החתום התקבל אצל לירון בן ישי. נחזור אליך בהקדם.</p>
+  <p class="note" id="copyNote">מומלץ לשמור העתק של הטופס החתום אצלך:</p>
+  <img id="preview" alt="הטופס החתום">
+  <a class="btn primary" id="dlCopy" download="כתב_התחייבות_חתום.jpg" href="#">שמירת העתק של הטופס החתום</a>
+  <p class="note" style="font-size:13px">בטלפון אפשר גם ללחוץ לחיצה ארוכה על התמונה ולבחור "שמירת תמונה".</p>
 </div>
 
 </div>
@@ -197,6 +232,37 @@ function setErr(key,msg){
   const el=document.querySelector(`.err[data-for="${key}"]`); if(el) el.textContent=msg||'';
   const inp=$(key); if(inp && inp.tagName==='INPUT') inp.classList.toggle('invalid',!!msg);
 }
+let receiptData=null;
+function shrinkImage(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onerror=rej;
+    fr.onload=()=>{
+      if(file.type==='application/pdf'){res(fr.result);return;}
+      const im=new Image();
+      im.onerror=()=>res(fr.result);
+      im.onload=()=>{
+        const max=1600,sc=Math.min(1,max/Math.max(im.width,im.height));
+        const c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
+        const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+        res(c.toDataURL('image/jpeg',0.82));
+      };
+      im.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+$('receipt').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  if(f.size>15*1024*1024){setErr('receipt','הקובץ גדול מדי, נסי צילום מסך');return;}
+  receiptData=await shrinkImage(f);
+  $('uploadBox').classList.add('has');
+  $('receiptName').textContent='הועלה: '+f.name+' (לחצי להחלפה)';
+  const p=$('receiptPrev');
+  if(receiptData.startsWith('data:image')){p.src=receiptData;p.style.display='block';} else p.style.display='none';
+  setErr('receipt','');
+});
+
 function validate(){
   let ok=true;
   const req={name:'נא למלא שם מלא',addr:'נא למלא כתובת',dob:'נא למלא תאריך לידה',due:'נא למלא תאריך לידה משוער'};
@@ -207,6 +273,7 @@ function validate(){
   if(ph.length<9){setErr('phone','נא למלא מספר טלפון תקין');ok=false;} else setErr('phone','');
   const unchecked=[...document.querySelectorAll('[data-c]')].filter(x=>!x.checked);
   if(unchecked.length){setErr('clauses','יש לאשר את כל הסעיפים');ok=false;} else setErr('clauses','');
+  if(!receiptData){setErr('receipt','נא להעלות צילום של ההעברה');ok=false;} else setErr('receipt','');
   if(pads.sig1.empty){setErr('sig1','נא לחתום');ok=false;} else setErr('sig1','');
   $('errSummary').textContent = ok?'':'יש שדות שדורשים השלמה, הם מסומנים באדום.';
   return ok;
@@ -258,6 +325,9 @@ async function renderImage(){
     for(const p of cl.p) for(const l of wrap(ctx,p,maxW)){ctx.fillText(l,R,y);y+=30;}
     y+=12;
   }
+  sec('תשלום');
+  ctx.font='400 20px Heebo, Arial';ctx.fillStyle='#2b3550';
+  ctx.fillText('500 ₪ לבנק לאומי, סניף 933, חשבון 13830248. צילום ההעברה צורף לטופס.',R,y);y+=40;
   sec('הצהרה וחתימה');
   ctx.font='400 20px Heebo, Arial';ctx.fillStyle='#2b3550';
   ctx.fillText('קראתי את כל הסעיפים, הבנתי אותם ואני מסכימה להם.',R,y);y+=40;
@@ -286,42 +356,35 @@ function summaryText(){
   ].filter(Boolean).join('\n');
 }
 
-const SEND_TO = 'office.liron2026@gmail.com';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzI9qYKEtkb4m0DfjCyBg78NmjWqnNZQQ2QvQyYifL8ertyTUbpAiUtfohVvVjere6m/exec';
 if(location.hash==='#sent'){ $('formView').style.display='none'; $('done').style.display='block'; }
 
 $('f').addEventListener('submit', async e=>{
   e.preventDefault();
   if(!validate()){ const first=document.querySelector('.invalid, .err:not(:empty)'); if(first) first.scrollIntoView({behavior:'smooth',block:'center'}); return; }
-  const btn=$('submitBtn'); btn.disabled=true; btn.textContent='שולח...';
+  const btn=$('submitBtn'); btn.disabled=true; btn.textContent='שולחת...';
   try{
     const img=await renderImage();
-    const blob=await new Promise(r=>img.toBlob(r,'image/jpeg',0.85));
-    const nm=$('name').value.trim();
-    const form=document.createElement('form');
-    form.method='POST'; form.enctype='multipart/form-data';
-    form.action='https://formsubmit.co/'+SEND_TO; form.style.display='none';
-    const add=(k,v)=>{const i=document.createElement('input');i.type='hidden';i.name=k;i.value=v;form.appendChild(i);};
-    add('_subject','כתב התחייבות חתום: '+nm);
-    add('_captcha','false');
-    add('_template','table');
-    add('_next',location.href.split('#')[0]+'#sent');
-    add('שם מלא',nm);
-    add('תעודת זהות',$('tz').value.trim());
-    add('תאריך לידה',fmtDate($('dob').value));
-    add('תאריך לידה משוער',fmtDate($('due').value));
-    add('כתובת',$('addr').value.trim());
-    add('טלפון',$('phone').value.trim());
-    add('דואל',$('email').value.trim()||'-');
-    add('בן הזוג',$('spouse').value.trim()||'-');
-    add('אישור סעיפים','הלקוחה אישרה את כל 5 הסעיפים');
-    add('תאריך חתימה',today());
-    const fi=document.createElement('input'); fi.type='file'; fi.name='attachment';
-    const dt=new DataTransfer(); dt.items.add(new File([blob],'signed-'+$('tz').value.trim()+'.jpg',{type:'image/jpeg'}));
-    fi.files=dt.files; form.appendChild(fi);
-    document.body.appendChild(form); form.submit();
+    const data={
+      name:$('name').value.trim(),
+      tz:$('tz').value.trim(),
+      dob:fmtDate($('dob').value),
+      due:fmtDate($('due').value),
+      addr:$('addr').value.trim(),
+      phone:$('phone').value.trim(),
+      email:$('email').value.trim(),
+      spouse:$('spouse').value.trim(),
+      image:img.toDataURL('image/jpeg',0.8),
+      receipt:receiptData
+    };
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data)});
+    $('preview').src=data.image; $('dlCopy').href=data.image;
+    $('dlCopy').download='כתב_התחייבות_'+data.name.replace(/\s+/g,'_')+'.jpg';
+    if(data.email) $('copyNote').textContent='העתק נשלח גם למייל שלך. אפשר לשמור אותו גם כאן:';
+    $('formView').style.display='none'; $('done').style.display='block'; window.scrollTo(0,0);
   }catch(err){
     btn.disabled=false; btn.textContent='אישור, חתימה ושליחה';
-    $('errSummary').textContent='השליחה לא הצליחה, נסו שוב.';
+    $('errSummary').textContent='השליחה לא הצליחה. בדקי את החיבור לאינטרנט ונסי שוב.';
   }
 });
 </script>
