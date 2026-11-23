@@ -56,10 +56,10 @@ input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(19,1
   <div class="intro">
     <p><b>זום מקיף שבו תקבלי את כל הידע על הזכויות שלך בנוגע לדמי לידה מוגדלים בסך 22,000 ₪.</b> בסוף הזום תצאי עם מידע מדויק מה עלייך לעשות כדי להיות זכאית למענק.</p>
     <p>הזום נמשך 40 דקות, ובסופו יינתנו כחצי שעה לשאלות כלליות.</p>
-    <p>בהרשמה לזום את מתחייבת לשלם מראש 500 ₪ עבור הזום, ולאחר הלידה להגיש את התביעה אך ורק דרכי. על התשלום שתקבלי מביטוח לאומי, כ-22,000 ₪ (משוער), תשלמי 12% + מע"מ, בניכוי 500 ₪ ששילמת עבור הזום.</p>
+    <p>בהרשמה לזום את מתחייבת לשלם מראש 500 ₪ עבור הזום, ולאחר הלידה להגיש את התביעה אך ורק דרכי. על התשלום שתקבלי מביטוח לאומי, כ-22,000 ₪ (משוער), תשלמי 12% + מע"מ, <b>בניכוי 500 ₪</b> ששילמת עבור הזום.</p>
     <p><b>חשוב לדעת:</b> גם אם תגישי את התביעה באופן עצמאי, תצטרכי לשלם 12% + מע"מ.</p>
     <p>אין להקליט, להסריט או לצפות בזום עם חברות. ניתן לצפות רק יחד עם בן הזוג.</p>
-    <p><b>אני בטוחה שבסוף הזום תצאי עם ידע ששווה 22,000 ₪! היצמדי להוראות, ונצא לדרך.</b></p>
+    <p><b>אני בטוחה שבסוף הזום תצאי עם ידע ששווה 22,000 ₪! היצמדי להוראות, ונצא לדרך בעז"ה.</b></p>
   </div>
 </div>
 
@@ -127,7 +127,7 @@ input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(19,1
   <div class="clause">
     <h3>5. תמורה ותשלום</h3>
     <div class="price"><b>פגישת ייעוץ בזום:</b> 40 דקות פגישה וחצי שעה נוספת לשאלות. 500 ₪, כולל מע"מ. התשלום מתבצע לפני הפגישה.</div>
-    <div class="price"><b>שכר טרחה על התביעה:</b> 12% + מע"מ מסכום התביעה שיתקבל בפועל, בניכוי 500 ₪ ששולמו עבור פגישת הזום.</div>
+    <div class="price"><b>שכר טרחה על התביעה:</b> 12% + מע"מ מסכום התביעה שיתקבל בפועל, <b>בניכוי 500 ₪</b> ששולמו עבור פגישת הזום.</div>
     <div class="price">גם אם אגיש את התביעה באופן עצמאי, ולא באמצעות לירון בן ישי, אשלם 12% + מע"מ מסכום התביעה שיתקבל.</div>
     <label class="agree"><input type="checkbox" data-c="5"> קראתי ואני מאשרת</label>
   </div>
@@ -142,10 +142,6 @@ input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(19,1
   <div class="sigbox"><canvas id="sig1"></canvas></div>
   <div class="sigbar"><span>חתמו באצבע או בעכבר</span><button type="button" class="linkbtn" data-clear="sig1">ניקוי</button></div>
   <div class="err" data-for="sig1"></div>
-
-  <label>חתימת בן הזוג <span class="hint">(אם משתתף)</span></label>
-  <div class="sigbox"><canvas id="sig2"></canvas></div>
-  <div class="sigbar"><span>לא חובה</span><button type="button" class="linkbtn" data-clear="sig2">ניקוי</button></div>
 
   <button class="btn primary" type="submit" id="submitBtn">אישור, חתימה ושליחה</button>
   <div id="errSummary"></div>
@@ -185,7 +181,7 @@ function setupPad(id){
   c.addEventListener('pointerup',stop); c.addEventListener('pointercancel',stop);
   pads[id]=pad;
 }
-setupPad('sig1'); setupPad('sig2');
+setupPad('sig1');
 document.querySelectorAll('[data-clear]').forEach(b=>b.addEventListener('click',()=>{
   const p=pads[b.dataset.clear]; p.ctx.save(); p.ctx.setTransform(1,0,0,1,0,0); p.ctx.clearRect(0,0,p.c.width,p.c.height); p.ctx.restore(); p.empty=true;
 }));
@@ -272,7 +268,6 @@ async function renderImage(){
     ctx.strokeStyle='#d9dde4';ctx.strokeRect(R-sw,y,sw,sh);ctx.drawImage(p.c,R-sw,y,sw,sh);y+=sh+30;
   };
   sigBlock('חתימת הלקוחה:',pads.sig1);
-  if(!pads.sig2.empty) sigBlock('חתימת בן הזוג:',pads.sig2);
   const out=document.createElement('canvas'); out.width=W; out.height=y+20;
   out.getContext('2d').drawImage(c,0,0);
   return out;
